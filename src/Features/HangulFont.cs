@@ -32,10 +32,19 @@ namespace Nalasmalssami.Features
         private static FieldInfo _gridCaption; // GridItemView.Caption (아이템 짧은 이름 — 한국어 게임에선 한글이 잘 보이는 글자)
         private static PropertyInfo _textProp;  // TMP_Text.text
         private static PropertyInfo _fallbackTable; // TMP_FontAsset.fallbackFontAssetTable
+        private static PropertyInfo _sharedMat;     // TMP_Text.fontSharedMaterial (글자를 그리는 재질 — 글꼴 그림판과 짝)
+        private static Type _subMeshUi;             // TMPro.TMP_SubMeshUI (예비 글꼴 글자를 따로 그리는 자식 조각)
+
+        // 정밀 검사: 한글 태그가 처음 보인 칸을 몇 프레임 뒤(크기 조정 끝난 뒤) 한 번 자세히 기록
+        private static object _probeView;
+        private static int _probeFrame;
+        private static bool _probed;
 
         // 태그 글자 칸 글꼴 바꿔치기: 칸(인스턴스 ID) → 원래 글꼴
         private static readonly System.Collections.Generic.Dictionary<int, object> SwappedFrom =
             new System.Collections.Generic.Dictionary<int, object>();
+        private static readonly System.Collections.Generic.Dictionary<int, object> SwappedMat =
+            new System.Collections.Generic.Dictionary<int, object>(); // 칸 ID → 원래 재질
         private static readonly System.Collections.Generic.Dictionary<int, object> SwappedText =
             new System.Collections.Generic.Dictionary<int, object>(); // 칸 ID → 태그 글자(TMP) — 끌 때 되돌리기용
         private static object _directFont;     // 한글이 "자기 안에" 들어 있는 글꼴(예비 글꼴을 거치지 않음)
@@ -70,6 +79,8 @@ namespace Nalasmalssami.Features
             _gridCaption = Reflect.Field(view, "Caption");
             _textProp = Reflect.Prop(tmpText, "text");
             _fallbackTable = Reflect.Prop(_fontAsset, "fallbackFontAssetTable");
+            _sharedMat = Reflect.Prop(tmpText, "fontSharedMaterial");
+            _subMeshUi = Reflect.Type("TMPro.TMP_SubMeshUI");
             MethodInfo updateTag = Reflect.Method(view, "UpdateTag");
             if (updateTag != null && _gridTagName != null)
             {
@@ -137,6 +148,7 @@ namespace Nalasmalssami.Features
                 if (original != null)
                 {
                     _font.SetValue(tagText, original, null); // 영어 태그 → 원래 글꼴
+                    RestoreMat(id, tagText);
                     SwappedFrom.Remove(id);
                     SwappedText.Remove(id);
                 }
@@ -144,30 +156,69 @@ namespace Nalasmalssami.Features
                 return;
             }
 
-            object current = original ?? _font.GetValue(tagText, null);
-            char sample = tag.First(c => c > 0x7F);
-            if (!Reflect.IsNull(current) && HasChar(current, sample, searchFallbacks: false))
+            if (!_probed && _probeView == null)
             {
-                return; // 칸 글꼴이 직접 그릴 수 있음
+                _probeView = view;
+                _probeFrame = Time.frameCount + 15;
             }
 
-            object direct = ResolveDirectFont(view);
-            LogDiagOnce(view, current, direct, sample);
-            if (Reflect.IsNull(direct) || ReferenceEquals(direct, _font.GetValue(tagText, null)))
+            object current = original ?? _font.GetValue(tagText, null);
+            char sample = tag.First(c => c > 0x7F);
+
+            // 1.1.3: 같은 칸의 아이템 이름(Caption)이 한글을 그리고 있으면 그 글꼴+재질을 그대로 빌린다.
+            // 1.1.2는 "태그 글꼴에 한글이 직접 있음"이면 아무것도 안 했는데, 그래도 안 보였을 수 있어서
+            // 글꼴 검사 결과와 상관없이 "실제로 한글이 보이는 칸"을 따라 한다.
+            object caption = _gridCaption?.GetValue(view);
+            string captionText = Reflect.IsNull(caption) ? string.Empty : _textProp.GetValue(caption, null) as string ?? string.Empty;
+            object direct = null;
+            object material = null;
+            string how;
+            if (captionText.Any(c => c > 0x7F) && !Reflect.IsNull(_font.GetValue(caption, null)))
+            {
+                direct = _font.GetValue(caption, null);
+                material = _sharedMat?.GetValue(caption, null);
+                how = "이름 칸 따라 하기";
+            }
+            else
+            {
+                if (!Reflect.IsNull(current) && HasChar(current, sample, searchFallbacks: false))
+                {
+                    return; // 칸 글꼴이 직접 그릴 수 있음
+                }
+
+                direct = ResolveDirectFont(view);
+                how = "한글 글꼴 찾기";
+            }
+
+            LogDiagOnce(view, current, direct, sample, how);
+            if (Reflect.IsNull(direct))
             {
                 return;
+            }
+
+            object nowFont = _font.GetValue(tagText, null);
+            object nowMat = _sharedMat?.GetValue(tagText, null);
+            if (ReferenceEquals(direct, nowFont) && (Reflect.IsNull(material) || ReferenceEquals(material, nowMat)))
+            {
+                return; // 이미 같음
             }
 
             if (original == null)
             {
                 SwappedFrom[id] = current;
+                SwappedMat[id] = nowMat;
                 SwappedText[id] = tagText;
             }
 
             _font.SetValue(tagText, direct, null);
+            if (!Reflect.IsNull(material))
+            {
+                _sharedMat.SetValue(tagText, material, null);
+            }
+
             if (Dbg.Limit("한글 글꼴 교체", 20))
             {
-                Dbg.Log("한글 글꼴", $"태그 '{tag}' 칸 글꼴 교체: {Name(current)} → {Name(direct)}");
+                Dbg.Log("한글 글꼴", $"태그 '{tag}' 칸 글꼴 교체({how}): {Name(current)} → {Name(direct)}, 재질 {Name(nowMat)} → {Name(material ?? nowMat)}");
             }
         }
 
@@ -226,7 +277,7 @@ namespace Nalasmalssami.Features
             }
         }
 
-        private static void LogDiagOnce(object view, object tagFont, object direct, char sample)
+        private static void LogDiagOnce(object view, object tagFont, object direct, char sample, string how)
         {
             if (_diagLogged)
             {
@@ -239,7 +290,7 @@ namespace Nalasmalssami.Features
             Plugin.Log.LogInfo(
                 $"[한글 글꼴] 태그 칸 글꼴={Name(tagFont)} (직접 '{sample}' 있음={HasChar(tagFont, sample, false)}, 예비 포함={HasChar(tagFont, sample, true)}), " +
                 $"이름 칸 글꼴={Name(captionFont)} (직접={HasChar(captionFont, sample, false)}), " +
-                $"바꿔 끼울 글꼴={(Reflect.IsNull(direct) ? "못 찾음" : Name(direct))}");
+                $"바꿔 끼울 글꼴={(Reflect.IsNull(direct) ? "못 찾음" : Name(direct))} ({how})");
         }
 
         private static void RestoreAllSwaps()
@@ -249,14 +300,122 @@ namespace Nalasmalssami.Features
                 if (!Reflect.IsNull(pair.Value) && SwappedFrom.TryGetValue(pair.Key, out object original))
                 {
                     _font.SetValue(pair.Value, original, null);
+                    RestoreMat(pair.Key, pair.Value);
                 }
             }
 
             SwappedFrom.Clear();
+            SwappedMat.Clear();
             SwappedText.Clear();
         }
 
-        private static string Name(object font) => Reflect.IsNull(font) ? "없음" : ((UnityEngine.Object)font).name;
+        private static void RestoreMat(int id, object tagText)
+        {
+            if (SwappedMat.TryGetValue(id, out object mat))
+            {
+                if (!Reflect.IsNull(mat))
+                {
+                    _sharedMat?.SetValue(tagText, mat, null);
+                }
+
+                SwappedMat.Remove(id);
+            }
+        }
+
+        /// <summary>Plugin.Update에서 매 프레임 호출 — 예약된 정밀 검사를 한 번 실행.</summary>
+        internal static void Tick()
+        {
+            if (_probeView == null || Time.frameCount < _probeFrame)
+            {
+                return;
+            }
+
+            object view = _probeView;
+            _probeView = null;
+            _probed = true;
+            try
+            {
+                if (!Reflect.IsNull(view))
+                {
+                    Plugin.Log.LogInfo("[한글 글꼴][정밀 검사] 태그 글자: " + DescribeText(_gridTagName.GetValue(view)));
+                    Plugin.Log.LogInfo("[한글 글꼴][정밀 검사] 이름 글자: " + DescribeText(_gridCaption?.GetValue(view)));
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning("[한글 글꼴][정밀 검사] 실패: " + e.Message);
+            }
+        }
+
+        /// <summary>TMP 글자 한 칸의 상태를 한 줄로: 글꼴·재질·색·크기·켜짐·글자별로 그려지는지·자식 조각(예비 글꼴용).</summary>
+        private static string DescribeText(object text)
+        {
+            if (Reflect.IsNull(text))
+            {
+                return "없음";
+            }
+
+            var comp = (Component)text;
+            var sb = new System.Text.StringBuilder();
+            object font = Get(text, "font");
+            object mat = Get(text, "fontSharedMaterial");
+            sb.Append($"글자='{Get(text, "text")}', 글꼴={Name(font)}(그림판={Name(Get(font, "atlasTexture"))}, 방식={Get(font, "atlasPopulationMode")})");
+            sb.Append($", 재질={Name(mat)}(셰이더={Name(Get(mat, "shader"))}, 그림판={Name(Get(mat, "mainTexture"))})");
+            sb.Append($", 색={Get(text, "color")}, 크기={Get(text, "fontSize")}, 자동크기={Get(text, "enableAutoSizing")}");
+            sb.Append($", 켜짐={comp.gameObject.activeInHierarchy}/{Get(text, "enabled")}, 칸={((RectTransform)comp.transform).rect.size}");
+            sb.Append($", 넘침={Get(text, "overflowMode")}, 보이는 글자수={Get(Get(text, "textInfo"), "characterCount")}");
+
+            if (Get(Get(text, "textInfo"), "characterInfo") is Array chars)
+            {
+                int count = Convert.ToInt32(Get(Get(text, "textInfo"), "characterCount") ?? 0);
+                sb.Append(", 글자별=[");
+                for (int i = 0; i < Math.Min(count, Math.Min(chars.Length, 8)); i++)
+                {
+                    object ci = chars.GetValue(i);
+                    sb.Append($"'{Get(ci, "character")}':보임={Get(ci, "isVisible")},글꼴={Name(Get(ci, "fontAsset"))} ");
+                }
+
+                sb.Append(']');
+            }
+
+            if (_subMeshUi != null)
+            {
+                Component[] subs = comp.GetComponentsInChildren(_subMeshUi, true);
+                sb.Append($", 자식 조각 {subs.Length}개");
+                foreach (Component sub in subs.Take(4))
+                {
+                    sb.Append($" [{sub.gameObject.activeInHierarchy}, 글꼴={Name(Get(sub, "fontAsset"))}, 재질={Name(Get(sub, "sharedMaterial"))}]");
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        private static object Get(object o, string member)
+        {
+            if (Reflect.IsNull(o))
+            {
+                return null;
+            }
+
+            try
+            {
+                Type t = o.GetType();
+                PropertyInfo p = AccessTools.Property(t, member);
+                if (p != null)
+                {
+                    return p.GetValue(o, null);
+                }
+
+                return AccessTools.Field(t, member)?.GetValue(o);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string Name(object font) => Reflect.IsNull(font) ? "없음" : font is UnityEngine.Object o ? o.name : font.ToString();
 
         /// <summary>sampleText(TMP_Text)의 글꼴로 한글을 못 그리면 예비 글꼴을 붙인다. 한 번만 실제로 검사.</summary>
         public static void Ensure(object sampleText)

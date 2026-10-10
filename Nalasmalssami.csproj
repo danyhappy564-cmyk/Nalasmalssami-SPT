@@ -5,7 +5,7 @@
     <RootNamespace>Nalasmalssami</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
-    <Version>1.1.2</Version>
+    <Version>1.1.3</Version>
     <Authors>R_F</Authors>
     <Product>Nalasmalssami (나랏말싸미)</Product>
     <Description>SPT 4.1 item tags: Hangul input, tag over name, more tag colours</Description>

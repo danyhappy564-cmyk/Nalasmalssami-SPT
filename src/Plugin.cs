@@ -23,7 +23,7 @@ namespace Nalasmalssami
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "com.rf.nalasmalssami";
-        public const string Version = "1.1.2";
+        public const string Version = "1.1.3";
 
         internal static ManualLogSource Log;
         internal static Harmony Harmony;
@@ -103,6 +103,7 @@ namespace Nalasmalssami
             HangulInput.Tick();
             PresetBar.Tick();
             GridRefresh.Tick();
+            HangulFont.Tick();
         }
 
         private static void TryEnable(string name, Func<string> enable)
