@@ -33,6 +33,11 @@ namespace Nalasmalssami.Features
         private static PropertyInfo _textProp;  // TMP_Text.text
         private static PropertyInfo _fallbackTable; // TMP_FontAsset.fallbackFontAssetTable
         private static PropertyInfo _sharedMat;     // TMP_Text.fontSharedMaterial (글자를 그리는 재질 — 글꼴 그림판과 짝)
+        private static PropertyInfo _overflow;      // TMP_Text.overflowMode (칸에 안 들어가는 글자 처리 방식)
+        private static readonly System.Collections.Generic.Dictionary<int, object> SwappedOverflow =
+            new System.Collections.Generic.Dictionary<int, object>(); // 칸 ID → 원래 넘침 방식
+        private static readonly System.Collections.Generic.Dictionary<int, object> OverflowText =
+            new System.Collections.Generic.Dictionary<int, object>(); // 칸 ID → 태그 글자(TMP)
         private static Type _subMeshUi;             // TMPro.TMP_SubMeshUI (예비 글꼴 글자를 따로 그리는 자식 조각)
 
         // 정밀 검사: 한글 태그가 처음 보인 칸을 몇 프레임 뒤(크기 조정 끝난 뒤) 한 번 자세히 기록
@@ -81,6 +86,7 @@ namespace Nalasmalssami.Features
             _fallbackTable = Reflect.Prop(_fontAsset, "fallbackFontAssetTable");
             _sharedMat = Reflect.Prop(tmpText, "fontSharedMaterial");
             _subMeshUi = Reflect.Type("TMPro.TMP_SubMeshUI");
+            _overflow = Reflect.Prop(tmpText, "overflowMode");
             MethodInfo updateTag = Reflect.Method(view, "UpdateTag");
             if (updateTag != null && _gridTagName != null)
             {
@@ -142,6 +148,7 @@ namespace Nalasmalssami.Features
             string tag = _textProp.GetValue(tagText, null) as string ?? string.Empty;
             bool needsHangul = tag.Any(c => c > 0x7F);
             SwappedFrom.TryGetValue(id, out object original);
+            FixOverflow(id, tagText, needsHangul);
 
             if (!needsHangul)
             {
@@ -304,9 +311,66 @@ namespace Nalasmalssami.Features
                 }
             }
 
+            foreach (var pair in OverflowText)
+            {
+                FixOverflow(pair.Key, pair.Value, false, keepEntry: true);
+            }
+
             SwappedFrom.Clear();
             SwappedMat.Clear();
+            SwappedOverflow.Clear();
+            OverflowText.Clear();
             SwappedText.Clear();
+        }
+
+        /// <summary>
+        /// 1.1.2 인게임 로그: 글꼴을 NotoSans-Korean으로 바꿔도 칸 태그 한글이 안 보임 → 글꼴 문제가 아님.
+        /// 추정(미검증): 한글 글꼴은 위아래 높이가 Bender보다 커서, 납작한 태그 칸에 "세로로 안 들어감" →
+        /// TMP의 넘침 방식이 잘라내기(Truncate/Ellipsis)면 그 줄 전체를 숨김. 가로 폭(preferredWidth)은
+        /// 칸 크기와 무관하게 계산되므로 막대는 글자 수만큼 늘어남 — 증상과 일치.
+        /// → 한글 태그일 때만 넘침 방식을 Overflow(0, 넘쳐도 그냥 그림)로, 영어 태그·기능 끔이면 원래대로.
+        /// </summary>
+        private static void FixOverflow(int id, object tagText, bool needsHangul, bool keepEntry = false)
+        {
+            if (_overflow == null)
+            {
+                return;
+            }
+
+            bool saved = SwappedOverflow.TryGetValue(id, out object originalMode);
+            if (needsHangul)
+            {
+                object now = _overflow.GetValue(tagText, null);
+                if (Convert.ToInt32(now) == 0)
+                {
+                    return;
+                }
+
+                if (!saved)
+                {
+                    SwappedOverflow[id] = now;
+                    OverflowText[id] = tagText;
+                }
+
+                _overflow.SetValue(tagText, Enum.ToObject(_overflow.PropertyType, 0), null);
+                if (Dbg.Limit("한글 넘침", 10))
+                {
+                    Dbg.Log("한글 글꼴", $"태그 칸 넘침 방식 {now} → Overflow");
+                }
+            }
+            else if (saved)
+            {
+                if (!Reflect.IsNull(tagText))
+                {
+                    _overflow.SetValue(tagText, originalMode, null);
+                }
+
+                if (!keepEntry)
+                {
+                    SwappedOverflow.Remove(id);
+                    OverflowText.Remove(id);
+                }
+            }
         }
 
         private static void RestoreMat(int id, object tagText)
@@ -363,7 +427,7 @@ namespace Nalasmalssami.Features
             sb.Append($", 재질={Name(mat)}(셰이더={Name(Get(mat, "shader"))}, 그림판={Name(Get(mat, "mainTexture"))})");
             sb.Append($", 색={Get(text, "color")}, 크기={Get(text, "fontSize")}, 자동크기={Get(text, "enableAutoSizing")}");
             sb.Append($", 켜짐={comp.gameObject.activeInHierarchy}/{Get(text, "enabled")}, 칸={((RectTransform)comp.transform).rect.size}");
-            sb.Append($", 넘침={Get(text, "overflowMode")}, 보이는 글자수={Get(Get(text, "textInfo"), "characterCount")}");
+            sb.Append($", 넘침={Get(text, "overflowMode")}(원래={(SwappedOverflow.TryGetValue(comp.GetInstanceID(), out object om) ? om : "안 바꿈")}), 줄바꿈={Get(text, "enableWordWrapping")}, 여백={Get(text, "margin")}, 보이는 글자수={Get(Get(text, "textInfo"), "characterCount")}");
 
             if (Get(Get(text, "textInfo"), "characterInfo") is Array chars)
             {
