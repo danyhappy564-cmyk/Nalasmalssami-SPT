@@ -1,0 +1,72 @@
+# 나랏말싸미 (Nalasmalssami) v1.1.4
+
+SPT 4.1용 클라이언트 모드입니다. 아이템 태그에 **한글을 쓰고, 인벤토리 칸에서도 한글로 보이게** 합니다.
+A client-side SPT 4.1 mod that lets you write item tags in **Korean (Hangul)** and shows them correctly in inventory grid cells.
+
+---
+
+### ⚠️ IMPORTANT NOTICE / DISCLAIMER
+
+**Original Author:** FalconPilot (SPT Tag over name) / acidphantasm (More Tag Colours)
+**Original Repository:** spt-tag-over-name / acidphantasm-moretagcolours
+**Original Link:** https://github.com/FalconPilot/spt-tag-over-name / https://github.com/acidphantasm/acidphantasm-moretagcolours
+**License notation:** Nalasmalssami MIT (c) 2026 R_F. Bundled features are based on MIT-licensed code — FalconPilot (c) 2026, acidphantasm (c) 2025. See `THIRD-PARTY-NOTICES.md`.
+
+1. **Reflection & Take-Downs:** I deeply reflect on the ECOT incident. As an AI-assisted "vibe coder," I will immediately delete files if the original authors ask.
+2. **No Re-Distribution:** These ported builds are unverified, temporary fixes. Please do NOT re-upload or share them anywhere else.
+3. **Do Not Pester Original Authors:** Never report bugs or pester original modders regarding issues from my unofficial ports.
+4. **Full Credit & Respect:** I will always credit original creators on GitHub and prioritize their decisions above all else.
+5. **Support Original Creators:** Instead of using my ports, please visit the original authors' Forge pages to leave kind words or tips.
+
+---
+
+## 주요 기능 / Features
+
+| 기능 | Feature |
+|---|---|
+| **한글 태그 입력** — 태그 창에서 한글이 지워지지 않음 (태그 창 입력 칸에만 적용) | **Hangul tag input** — the tag window no longer deletes Korean characters (tag field only) |
+| **인벤토리 칸 한글 표시** — 칸 태그에서 한글이 빈칸으로 보이던 문제 해결 | **Hangul in grid cells** — fixes Korean tags showing as an empty bar |
+| 조합 중인 마지막 글자 살리기, 입력기(IME) 강제 켜기, 최대 글자 수 조절 | Keep the composing character on save, force IME, adjustable max length |
+| **태그를 이름 위에** (FalconPilot 원작) — 태그가 있으면 아이템 짧은 이름을 숨김 | **Tag over name** (by FalconPilot) — hides the short name when a tag exists |
+| **태그 색상 확장** (acidphantasm 원작) — 7색 → 18색 + 회색 9단계, 색 직접 지정 | **More tag colours** (by acidphantasm) — 7 → 18 colours + 9 greys, editable |
+| 태그 글자색 자동 대비 — 밝은 막대에는 검은 글씨 | Auto text contrast — black text on bright bars |
+| 태그 프리셋 버튼 — "팔 것", "퀘템" 등을 한 번에 입력 | Tag preset buttons |
+| 태그로 창고 검색 — `#검색어`는 태그만 검색 | Search the stash by tag — `#word` searches tags only |
+| 태그 글자 크기·굵게 | Tag font size / bold |
+| F12 디버그 로그 · 상태 기록 | F12 debug log and one-shot state dump |
+
+모든 설정은 F12(ConfigurationManager)에서 바꾸는 즉시 적용됩니다. 인벤토리를 다시 열 필요가 없습니다.
+All settings apply immediately from F12 (ConfigurationManager).
+
+## 이번 버전 변경점 / Changes in 1.1.4
+
+- 인벤토리 칸 태그에서 한글이 안 보이던 문제를 고쳤습니다. 한글 글꼴은 영어 글꼴보다 키가 커서 납작한 태그 칸에 세로로 들어가지 않았고, 게임 설정상 칸을 넘는 줄이 통째로 숨겨지고 있었습니다. 지금은 한글 태그일 때만 넘쳐도 그리도록 바꿉니다. 영어 태그는 원래 설정 그대로입니다.
+  Fixed Korean tags being invisible in grid cells. The Korean glyphs are taller than the cell, and the game's truncate setting hid the whole line. Overflow is now allowed for non-ASCII tags only; English tags are untouched.
+- "지금 상태 기록"을 한 번 눌렀는데 여러 번 기록되던 문제를 고쳤습니다. / Fixed the state dump being written several times per click.
+- 한글 태그가 처음 보일 때 진단 로그를 한 번 남깁니다(`[한글 글꼴][정밀 검사]`). / Logs a one-time diagnostic line when a Korean tag first appears.
+
+## 설치 / Install
+
+1. `Nalasmalssami-1.1.4.zip`을 SPT 폴더에 풉니다 → `BepInEx\plugins\Nalasmalssami\Nalasmalssami.dll`
+   Extract into your SPT folder.
+2. 클라이언트 전용입니다. 서버 모드는 없습니다. / Client only, no server mod.
+3. 1.1.x에서 올리는 경우 그대로 덮어쓰면 됩니다. 설정은 유지됩니다. / Overwrite when updating from 1.1.x; settings are kept.
+
+## 호환성 / Compatibility
+
+- SPT 4.1.x (4.1.6에서 테스트) / Tested on SPT 4.1.6.
+- **원본 모드와 함께 설치해도 충돌하지 않습니다.** TagOverName 또는 MoreTagColours가 있으면 해당 기능은 자동으로 꺼지고 원본이 처리합니다.
+  Safe alongside the original mods: the overlapping feature turns itself off and the original handles it.
+- 고라니 한글화(Korean Patch Fix 2.1.1)와 함께 쓴 환경에서 확인했습니다. / Checked together with Korean Patch Fix 2.1.1.
+
+## 검증 상태 / Verification
+
+- `dotnet build` 경고 0, 오류 0. / Builds with 0 warnings, 0 errors.
+- 인게임 확인(제작자 테스트): 한글 입력·저장, 인벤토리 칸 한글 태그 표시(1.1.4), 아이템 상세 창, 색상 확장·프리셋 등 나머지 기능(1.1.1).
+  In-game: Hangul input and save, grid display (1.1.4), inspect window and the other features (1.1.1).
+
+## 크레딧 / Credits
+
+- **FalconPilot** — [SPT Tag over name](https://github.com/FalconPilot/spt-tag-over-name) (MIT)
+- **acidphantasm** — [More Tag Colours](https://github.com/acidphantasm/acidphantasm-moretagcolours) (MIT)
+- 나랏말싸미 — R_F
