@@ -113,6 +113,16 @@ namespace Nalasmalssami.Features
                 {
                     _fontStyle.SetValue(text, Enum.ToObject(_fontStyle.PropertyType, style), null);
                 }
+
+                if (Dbg.Limit("태그 글자 모양", 40))
+                {
+                    string tag = TagAccess.GetTagName(ItemOf(__instance));
+                    if (tag != null)
+                    {
+                        Dbg.Log("태그 글자 모양", $"'{tag}': 막대색=({barColor.r:0.00},{barColor.g:0.00},{barColor.b:0.00}) 밝기={brightness:0.00} " +
+                                             $"→ {(wantedColor == DarkText ? "검은 글씨" : "원래 글씨")}, 크기={(auto ? "자동" : "고정")} x{scale:0.00}, 굵게={Settings.TagBold.Value}");
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -122,6 +132,14 @@ namespace Nalasmalssami.Features
                     Plugin.Log.LogError("[태그 글자 모양] 오류(이후 생략): " + e);
                 }
             }
+        }
+
+        private static PropertyInfo _item; // ItemView.Item
+
+        private static object ItemOf(object view)
+        {
+            _item = _item ?? Reflect.Prop(view.GetType(), "Item");
+            return _item?.GetValue(view, null);
         }
 
         private static Original Remember(object text)

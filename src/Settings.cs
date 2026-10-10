@@ -24,6 +24,10 @@ namespace Nalasmalssami
         public const string CharsetCjk = "한글 + 일본어·한자";
         public const string CharsetAll = "모든 문자";
 
+        // 0. 정보
+        public static ConfigEntry<bool> DebugLog;
+        public static ConfigEntry<bool> DumpState;
+
         // 1. 한글 입력
         public static ConfigEntry<bool> HangulEnabled;
         public static ConfigEntry<string> Charset;
@@ -81,14 +85,27 @@ namespace Nalasmalssami
 
         private static int _order = 1000;
 
+        /// <summary>상태 기록(DebugDump)에서 모든 설정값을 나열할 때 쓴다.</summary>
+        internal static ConfigFile File;
+
         public static void Init(ConfigFile config)
         {
+            File = config;
             // 0. 정보 — 원본 모드 감지 결과(읽기 전용, 매 실행 갱신)
             ConfigEntry<string> status = config.Bind(SecInfo, "Original mods", "",
                 new ConfigDescription(
                     "원본 모드(TagOverName / MoreTagColours)가 같이 설치되어 있으면 겹치는 기능은 원본에 맡기고 나랏말싸미 쪽은 자동으로 끕니다.",
                     null, new ConfigurationManagerAttributes { DispName = "원본 모드 감지", Order = _order--, ReadOnly = true }));
             status.Value = Compat.Summary();
+            DebugLog = config.Bind(SecInfo, "Debug log", false,
+                Desc("켜면 태그 창 열기·글자 입력(조합 중 글자 포함)·저장·글꼴·프리셋 버튼 위치·태그 검색·글자 모양 판단을 " +
+                     "BepInEx/LogOutput.log에 [디버그] 줄로 자세히 남깁니다. 문제 제보할 때만 켜고, 끝나면 꺼 주세요.",
+                    "디버그 로그"));
+            DumpState = config.Bind(SecInfo, "Dump state now", false,
+                Desc("체크하면 지금 상태(기능별 켜짐/실패, 설정값, 입력기 상태, 열린 창 등)를 LogOutput.log에 한 번 적고 자동으로 꺼집니다. " +
+                     "디버그 로그가 꺼져 있어도 동작합니다.",
+                    "지금 상태 기록 (1회)"));
+            DumpState.Value = false; // 지난 실행에서 체크된 채 남았어도 항상 꺼진 상태로 시작
 
             // 1. 한글 입력
             HangulEnabled = config.Bind(SecHangul, "Allow Hangul", true,

@@ -77,6 +77,10 @@ namespace Nalasmalssami.Features
                 try
                 {
                     __result = (bool)_checkItem.Invoke(__instance, new[] { item, useFilter });
+                    if (Dbg.Limit("태그 검색", 60))
+                    {
+                        Dbg.Log("태그 검색", $"검색어='{search}' 태그='{tag}' → {(__result ? "결과에 포함" : "다른 조건(잠김·필터 등)으로 제외")}");
+                    }
                 }
                 finally
                 {
@@ -110,7 +114,7 @@ namespace Nalasmalssami.Features
                 }
                 catch (Exception e)
                 {
-                    Plugin.Log.LogDebug("검색 창 새로고침 실패(무시): " + e.Message);
+                    Dbg.Log("태그 검색", "검색 창 새로고침 실패(무시): " + e.Message);
                 }
             }
         }

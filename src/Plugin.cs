@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Logging;
@@ -22,10 +23,13 @@ namespace Nalasmalssami
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "com.rf.nalasmalssami";
-        public const string Version = "1.1.0";
+        public const string Version = "1.1.1";
 
         internal static ManualLogSource Log;
         internal static Harmony Harmony;
+
+        /// <summary>기능 이름 → "켜짐" 또는 실패 이유 (상태 기록용)</summary>
+        internal static readonly Dictionary<string, string> FeatureStatus = new Dictionary<string, string>();
 
         private void Awake()
         {
@@ -46,6 +50,7 @@ namespace Nalasmalssami
             if (Compat.TagOverNameInstalled)
             {
                 Log.LogWarning("원본 'TagOverName' 모드가 설치되어 있어 나랏말싸미의 '태그를 이름 위에' 기능은 끕니다(원본이 처리).");
+                FeatureStatus["태그를 이름 위에"] = "원본 모드에 양보";
             }
             else
             {
@@ -55,13 +60,32 @@ namespace Nalasmalssami
             if (Compat.MoreTagColoursInstalled)
             {
                 Log.LogWarning("원본 'MoreTagColours' 모드가 설치되어 있어 나랏말싸미의 '태그 색상 확장' 기능은 끕니다(원본이 처리).");
+                FeatureStatus["태그 색상 확장"] = "원본 모드에 양보";
             }
             else
             {
                 TryEnable("태그 색상 확장", TagColours.Enable);
             }
 
+            Settings.DebugLog.SettingChanged += (_, __) =>
+            {
+                Util.Dbg.ResetLimits();
+                Log.LogInfo(Settings.DebugLog.Value ? "[디버그] 디버그 로그 켜짐" : "[디버그] 디버그 로그 꺼짐");
+            };
+            Settings.DumpState.SettingChanged += (_, __) =>
+            {
+                if (Settings.DumpState.Value)
+                {
+                    DebugDump.Write();
+                    Settings.DumpState.Value = false; // 1회용 스위치
+                }
+            };
+
             Log.LogInfo($"나랏말싸미 {Version} 로드 완료.");
+            if (Settings.DebugLog.Value)
+            {
+                Log.LogWarning("[디버그] 디버그 로그가 켜져 있습니다(F12 → 0. 정보). 제보가 끝나면 꺼 주세요.");
+            }
         }
 
         private void Update()
@@ -76,6 +100,7 @@ namespace Nalasmalssami
             try
             {
                 string error = enable();
+                FeatureStatus[name] = error == null ? "켜짐" : "꺼짐 — " + error;
                 if (error != null)
                 {
                     Log.LogError($"[{name}] 꺼짐: {error}");
@@ -83,6 +108,7 @@ namespace Nalasmalssami
             }
             catch (Exception e)
             {
+                FeatureStatus[name] = "오류 — " + e.Message;
                 Log.LogError($"[{name}] 켜는 중 오류 — 이 기능만 꺼집니다: {e}");
             }
         }

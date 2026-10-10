@@ -103,6 +103,17 @@ namespace Nalasmalssami.Features
             }
         }
 
+        /// <summary>상태 기록용</summary>
+        internal static string DescribeState()
+        {
+            if (Compat.MoreTagColoursInstalled)
+            {
+                return "원본 MoreTagColours가 처리";
+            }
+
+            return $"사용={Active}, 표시용 색 {_full?.Length ?? 0}개, 선택 창 색 {_picker?.Length ?? 0}개, 게임 기본 {Vanilla?.Length ?? 0}개";
+        }
+
         /// <summary>색 선택 창에 넘길 색 목록을 정한다(기능이 꺼져 있으면 그대로).</summary>
         internal static Color[] PickerFor(Color[] requested)
         {
@@ -163,6 +174,7 @@ namespace Nalasmalssami.Features
             }
 
             rect.sizeDelta = Active && Settings.BiggerWindow.Value ? BigWindowSize : OriginalWindowSizes[id];
+            Dbg.Log("태그 색상 확장", $"태그 창 크기 {rect.sizeDelta} (원래 {OriginalWindowSizes[id]})");
         }
     }
 

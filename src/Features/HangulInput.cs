@@ -54,6 +54,10 @@ namespace Nalasmalssami.Features
 
         private static IMECompositionMode? _imeBefore;
 
+        // 디버그: 직전 프레임의 입력 칸 글자/조합 중 글자 — 바뀔 때만 기록
+        private static string _lastText;
+        private static string _lastComposition;
+
         public static string Enable()
         {
             Type window = Reflect.Type("EFT.UI.EditTagWindow");
@@ -135,6 +139,12 @@ namespace Nalasmalssami.Features
                 CurrentWindow = __instance;
                 _currentInput = _tagInput.GetValue(__instance);
                 Apply(_currentInput);
+                _lastText = null;
+                _lastComposition = null;
+                if (Dbg.On)
+                {
+                    Dbg.Log("태그 창", "열림 — " + DescribeState());
+                }
 
                 if (!Reflect.IsNull(_currentInput) && _textComponent != null)
                 {
@@ -259,6 +269,7 @@ namespace Nalasmalssami.Features
 
                 string composing = Input.compositionString;
                 object input = _tagInput.GetValue(__instance);
+                Dbg.Log("태그 창", $"저장 누름 — 입력 칸 글자='{(Reflect.IsNull(input) ? "?" : _text.GetValue(input, null))}', 조합 중 글자='{composing}'");
                 if (string.IsNullOrEmpty(composing) || Reflect.IsNull(input))
                 {
                     return;
@@ -281,6 +292,7 @@ namespace Nalasmalssami.Features
                 }
 
                 _text.SetValue(input, merged, null);
+                Dbg.Log("태그 창", $"조합 중 글자 붙여서 저장: '{text}' + '{composing}' → '{_text.GetValue(input, null)}'");
             }
             catch (Exception e)
             {
@@ -292,6 +304,7 @@ namespace Nalasmalssami.Features
         {
             if (ReferenceEquals(__instance, CurrentWindow))
             {
+                Dbg.Log("태그 창", "닫힘");
                 CurrentWindow = null;
                 _currentInput = null;
                 RestoreIme();
@@ -310,7 +323,7 @@ namespace Nalasmalssami.Features
                 return;
             }
 
-            if (!Settings.HangulEnabled.Value || !Settings.ForceIme.Value || _isFocused == null)
+            if (_isFocused == null)
             {
                 return;
             }
@@ -325,6 +338,16 @@ namespace Nalasmalssami.Features
                 return;
             }
 
+            if (Dbg.On)
+            {
+                WatchTyping(focused);
+            }
+
+            if (!Settings.HangulEnabled.Value || !Settings.ForceIme.Value)
+            {
+                return;
+            }
+
             if (focused && Input.imeCompositionMode != IMECompositionMode.On)
             {
                 if (_imeBefore == null)
@@ -332,14 +355,52 @@ namespace Nalasmalssami.Features
                     _imeBefore = Input.imeCompositionMode;
                 }
 
+                Dbg.Log("입력기", $"IME 강제 켬 (이전: {Input.imeCompositionMode})");
                 Input.imeCompositionMode = IMECompositionMode.On;
             }
+        }
+
+        /// <summary>
+        /// 디버그: 글자나 조합 중 글자가 바뀔 때마다 기록 — "한글을 쳤는데 지워진다"면
+        /// 조합 중 글자는 보이는데 확정 뒤 입력 칸 글자에 안 남는 모습이 그대로 찍힌다.
+        /// </summary>
+        private static void WatchTyping(bool focused)
+        {
+            string text = _text.GetValue(_currentInput, null) as string ?? string.Empty;
+            string composition = Input.compositionString ?? string.Empty;
+            if (text == _lastText && composition == _lastComposition)
+            {
+                return;
+            }
+
+            _lastText = text;
+            _lastComposition = composition;
+            if (Dbg.Limit("글자 입력", 300))
+            {
+                Dbg.Log("글자 입력", $"입력 칸='{text}' ({text.Length}자), 조합 중='{composition}', 포커스={focused}, IME={Input.imeCompositionMode}");
+            }
+        }
+
+        /// <summary>상태 기록용: 지금 열린 태그 칸의 규칙·글자 수·입력기 상태.</summary>
+        internal static string DescribeState()
+        {
+            if (Reflect.IsNull(_currentInput))
+            {
+                return "열린 태그 창 없음";
+            }
+
+            object input = _currentInput;
+            return $"허용 규칙='{_validator.GetValue(input)}', 게임 플래그={_validationType.GetValue(input)}, " +
+                   $"최대 글자={_limit.GetValue(input, null)}, TMP 검사={(_charValidation != null ? _charValidation.GetValue(input, null) : "?")}, " +
+                   $"글자='{_text.GetValue(input, null)}', 포커스={(_isFocused != null ? _isFocused.GetValue(input, null) : "?")}, " +
+                   $"IME={Input.imeCompositionMode}(강제 전 값: {(_imeBefore?.ToString() ?? "없음")})";
         }
 
         private static void RestoreIme()
         {
             if (_imeBefore != null)
             {
+                Dbg.Log("입력기", $"IME 원래대로: {_imeBefore.Value}");
                 Input.imeCompositionMode = _imeBefore.Value;
                 _imeBefore = null;
             }

@@ -106,6 +106,8 @@ namespace Nalasmalssami.Features
 
             _checked = true;
             object font = _font.GetValue(sampleText, null);
+            Dbg.Log("한글 글꼴", $"검사 — 글자 칸 글꼴: {(Reflect.IsNull(font) ? "없음" : ((UnityEngine.Object)font).name)}, " +
+                              $"예비 글꼴 포함 한글 가능: {(!Reflect.IsNull(font) && HasHangul(font, searchFallbacks: true))}");
             if (!Reflect.IsNull(font) && HasHangul(font, searchFallbacks: true))
             {
                 Plugin.Log.LogInfo("[한글 글꼴] 게임 글꼴에 한글이 있어 그대로 씁니다.");
@@ -198,6 +200,14 @@ namespace Nalasmalssami.Features
             }
 
             return null;
+        }
+
+        /// <summary>상태 기록용</summary>
+        internal static string DescribeState()
+        {
+            int count = _globalFallbacks?.GetValue(null, null) is IList list ? list.Count : -1;
+            return $"검사 완료={_checked}, 우리가 붙인 예비 글꼴={(_added == null ? "없음" : ((UnityEngine.Object)_added).name)}, " +
+                   $"TMP 전역 예비 글꼴 수={count}";
         }
 
         private static void Remove()

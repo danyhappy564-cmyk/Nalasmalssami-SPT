@@ -171,6 +171,8 @@ namespace Nalasmalssami.Features
             }
 
             Layout();
+            Dbg.Log("태그 프리셋", $"버튼 {Buttons.Count}개 만듦 — 복제 원본={template.GetType().Name} '{template.name}', " +
+                              $"부모='{parent.name}', 창 순서={window.transform.GetSiblingIndex()}, {DescribeState()}");
         }
 
         /// <summary>매 프레임: 창 위치·크기를 따라가고, 버튼 폭을 글자에 맞춰 줄바꿈 배치.</summary>
@@ -272,6 +274,7 @@ namespace Nalasmalssami.Features
                 }
 
                 _inputText.SetValue(input, text, null); // 입력 칸 검사(한글 허용 규칙)와 글자 수 표시도 같이 갱신됨
+                Dbg.Log("태그 프리셋", $"'{preset.Text}' 누름 → 입력 칸='{_inputText.GetValue(input, null)}', 색번호={(preset.ColorIndex >= 0 ? (preset.ColorIndex + 1).ToString() : "그대로")}, 바로 저장={Settings.PresetInstantSave.Value}");
 
                 if (preset.ColorIndex >= 0 && _colorsPanel != null && _cells != null && _colorSelected != null)
                 {
@@ -320,6 +323,23 @@ namespace Nalasmalssami.Features
             }
 
             return list;
+        }
+
+        /// <summary>상태 기록용: 창·버튼 줄의 크기와 화면 위치(버튼이 화면 밖으로 나갔는지 확인).</summary>
+        internal static string DescribeState()
+        {
+            if (_bar == null || Reflect.IsNull(_barWindow))
+            {
+                return "버튼 줄 없음";
+            }
+
+            var windowRect = _barWindow.GetComponent<RectTransform>();
+            var barRect = _bar.GetComponent<RectTransform>();
+            var corners = new Vector3[4];
+            barRect.GetWorldCorners(corners);
+            string sizes = string.Join(" ", Buttons.ConvertAll(b => b.rect == null ? "?" : $"{b.rect.rect.width:0}x{b.rect.rect.height:0}"));
+            return $"창 크기={windowRect.rect.width:0}x{windowRect.rect.height:0}, 버튼 줄 크기={barRect.rect.width:0}x{barRect.rect.height:0}, " +
+                   $"버튼 줄 월드 좌표 왼쪽아래={corners[0]} 오른쪽위={corners[2]}, 화면={Screen.width}x{Screen.height}, 버튼들=[{sizes}]";
         }
 
         private static void Destroy()

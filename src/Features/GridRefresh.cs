@@ -33,6 +33,13 @@ namespace Nalasmalssami.Features
             RefreshAll();
         }
 
+        /// <summary>상태 기록용</summary>
+        internal static string DescribeState()
+        {
+            Type view = _view ?? Reflect.Type("EFT.UI.DragAndDrop.GridItemView");
+            return view == null ? "GridItemView 타입 없음" : $"지금 화면의 아이템 칸 {UnityEngine.Object.FindObjectsOfType(view).Length}개";
+        }
+
         private static void RefreshAll()
         {
             if (!_resolved)
@@ -60,11 +67,11 @@ namespace Nalasmalssami.Features
                 }
                 catch (Exception e)
                 {
-                    Plugin.Log.LogDebug("아이템 칸 새로 그리기 실패(무시): " + e.Message);
+                    Dbg.Log("아이템 칸", "새로 그리기 실패(무시): " + e.Message);
                 }
             }
 
-            Plugin.Log.LogDebug($"설정 변경 반영: 아이템 칸 {count}개 새로 그림");
+            Dbg.Log("아이템 칸", $"설정 변경 반영: {count}개 새로 그림");
         }
     }
 }
