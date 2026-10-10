@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>Nalasmalssami</AssemblyName>
+    <RootNamespace>Nalasmalssami</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <Version>1.0.0</Version>
+    <Authors>R_F</Authors>
+    <Product>Nalasmalssami (나랏말싸미)</Product>
+    <Description>SPT 4.1 item tags: Hangul input, tag over name, more tag colours</Description>
+    <DebugType>none</DebugType>
+    <Deterministic>true</Deterministic>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+
+    <!-- SPT 설치 폴더. 다른 곳이면: dotnet build -p:SPTPath="D:\SPT" -->
+    <SPTPath Condition="'$(SPTPath)' == ''">E:\SPT 4.1</SPTPath>
+    <Managed>$(SPTPath)\EscapeFromTarkov_Data\Managed</Managed>
+    <PluginDir>$(SPTPath)\BepInEx\plugins\Nalasmalssami</PluginDir>
+  </PropertyGroup>
+
+  <!-- 게임 어셈블리(Assembly-CSharp, TextMeshPro)는 참조하지 않는다 — 전부 이름(리플렉션)으로 접근. -->
+  <ItemGroup>
+    <Reference Include="BepInEx"><HintPath>$(SPTPath)\BepInEx\core\BepInEx.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(SPTPath)\BepInEx\core\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(Managed)\UnityEngine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(Managed)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.InputLegacyModule"><HintPath>$(Managed)\UnityEngine.InputLegacyModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(Managed)\UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <!-- 빌드 후: ① SPT 플러그인 폴더에 바로 복사(폴더가 있을 때만) ② 배포용 zip 생성 -->
+  <Target Name="DeployAndZip" AfterTargets="Build">
+    <ItemGroup>
+      <ModFiles Include="$(TargetPath);$(ProjectDir)LICENSE;$(ProjectDir)THIRD-PARTY-NOTICES.md" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ModFiles)" DestinationFolder="$(PluginDir)" Condition="Exists('$(SPTPath)\BepInEx\plugins')" />
+    <RemoveDir Directories="$(ProjectDir)release\stage" />
+    <Copy SourceFiles="@(ModFiles)" DestinationFolder="$(ProjectDir)release\stage\BepInEx\plugins\Nalasmalssami" />
+    <ZipDirectory SourceDirectory="$(ProjectDir)release\stage" DestinationFile="$(ProjectDir)release\Nalasmalssami-$(Version).zip" Overwrite="true" />
+    <RemoveDir Directories="$(ProjectDir)release\stage" />
+    <Message Importance="high" Text="나랏말싸미: release\Nalasmalssami-$(Version).zip 생성" />
+  </Target>
+</Project>
