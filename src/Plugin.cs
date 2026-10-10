@@ -23,7 +23,7 @@ namespace Nalasmalssami
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "com.rf.nalasmalssami";
-        public const string Version = "1.1.1";
+        public const string Version = "1.1.2";
 
         internal static ManualLogSource Log;
         internal static Harmony Harmony;
@@ -74,10 +74,11 @@ namespace Nalasmalssami
             };
             Settings.DumpState.SettingChanged += (_, __) =>
             {
+                // 1.1.1: 이 안에서 바로 false로 되돌리면 F12 창이 다시 true로 써서 기록이 여러 번 찍혔다 →
+                // 다음 프레임(Update)에 한 번만 기록하고 끈다.
                 if (Settings.DumpState.Value)
                 {
-                    DebugDump.Write();
-                    Settings.DumpState.Value = false; // 1회용 스위치
+                    _dumpPending = true;
                 }
             };
 
@@ -88,8 +89,17 @@ namespace Nalasmalssami
             }
         }
 
+        private static bool _dumpPending;
+
         private void Update()
         {
+            if (_dumpPending)
+            {
+                _dumpPending = false;
+                DebugDump.Write();
+                Settings.DumpState.Value = false; // 1회용 스위치
+            }
+
             HangulInput.Tick();
             PresetBar.Tick();
             GridRefresh.Tick();
