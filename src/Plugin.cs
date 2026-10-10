@@ -22,7 +22,7 @@ namespace Nalasmalssami
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "com.rf.nalasmalssami";
-        public const string Version = "1.0.0";
+        public const string Version = "1.1.0";
 
         internal static ManualLogSource Log;
         internal static Harmony Harmony;
@@ -39,6 +39,9 @@ namespace Nalasmalssami
             TryEnable("한글 입력", HangulInput.Enable);
             TryEnable("한글 글꼴 보강", HangulFont.Enable);
             TryEnable("색 선택 창 안전장치", ColourPanelGuard.Enable);
+            TryEnable("태그 글자 모양", TagStyle.Enable);
+            TryEnable("태그 프리셋", PresetBar.Enable);
+            TryEnable("태그 검색", TagSearch.Enable);
 
             if (Compat.TagOverNameInstalled)
             {
@@ -64,6 +67,7 @@ namespace Nalasmalssami
         private void Update()
         {
             HangulInput.Tick();
+            PresetBar.Tick();
             GridRefresh.Tick();
         }
 
