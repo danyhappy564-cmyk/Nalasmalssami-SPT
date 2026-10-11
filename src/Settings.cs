@@ -20,6 +20,12 @@ namespace Nalasmalssami
         public const string PresetBelow = "창 아래";
         public const string PresetAbove = "창 위";
 
+        public const string LookClean = "깔끔하게 (테두리 없음)";
+        public const string LookOutline = "이름 글자처럼 (테두리)";
+        public const string WeightDefault = "게임 기본";
+        public const string WeightBold = "굵게";
+        public const string WeightNormal = "안 굵게";
+
         public const string CharsetHangul = "한글";
         public const string CharsetCjk = "한글 + 일본어·한자";
         public const string CharsetAll = "모든 문자";
@@ -49,7 +55,10 @@ namespace Nalasmalssami
         public static ConfigEntry<bool> AutoContrast;
         public static ConfigEntry<float> ContrastThreshold;
         public static ConfigEntry<float> TagFontScale;
-        public static ConfigEntry<bool> TagBold;
+        public static ConfigEntry<string> TagLook;
+        public static ConfigEntry<string> TagWeight;
+        public static ConfigEntry<float> TagOffsetX;
+        public static ConfigEntry<float> TagOffsetY;
 
         // 5. 태그 프리셋
         public static ConfigEntry<bool> PresetsEnabled;
@@ -161,8 +170,20 @@ namespace Nalasmalssami
             TagFontScale = config.Bind(SecStyle, "Tag font scale", 1f,
                 Desc("아이템 칸 태그 글자 크기 배율. 1 = 게임 기본. 너무 키우면 막대 위아래로 넘칠 수 있습니다.",
                     "태그 글자 크기", new AcceptableValueRange<float>(0.7f, 1.5f)));
-            TagBold = config.Bind(SecStyle, "Tag bold", false,
-                Desc("아이템 칸 태그 글자를 굵게 합니다. 작은 칸에서 한글이 뭉개질 때 도움이 됩니다.", "태그 글자 굵게"));
+            TagLook = config.Bind(SecStyle, "Hangul tag look", LookClean,
+                Desc("한글 태그를 어떤 모양으로 그릴지(영어 태그는 항상 게임 기본).\n" +
+                     "· 깔끔하게: 한글 글꼴 그대로, 테두리 없음 — 밝은 색 막대에서도 잘 읽힘\n" +
+                     "· 이름 글자처럼: 아이템 이름과 같은 테두리 있는 글자(두꺼워 보임)",
+                    "태그 한글 모양", new AcceptableValueList<string>(LookClean, LookOutline)));
+            TagWeight = config.Bind(SecStyle, "Tag weight", WeightDefault,
+                Desc("아이템 칸 태그 글자 굵기. '게임 기본'은 손대지 않고, '굵게'/'안 굵게'는 강제로 켜고 끕니다.",
+                    "태그 글자 굵기", new AcceptableValueList<string>(WeightDefault, WeightBold, WeightNormal)));
+            TagOffsetX = config.Bind(SecStyle, "Tag text offset X", 0f,
+                Desc("태그 글자를 좌우로 옮깁니다(픽셀). + = 오른쪽. 막대는 그대로이고 글자만 움직입니다.",
+                    "태그 글자 위치 (좌우)", new AcceptableValueRange<float>(-10f, 10f)));
+            TagOffsetY = config.Bind(SecStyle, "Tag text offset Y", 0f,
+                Desc("태그 글자를 위아래로 옮깁니다(픽셀). + = 위쪽. 한글이 막대 안에서 아래로 처져 보이면 올려 보세요.",
+                    "태그 글자 위치 (위아래)", new AcceptableValueRange<float>(-10f, 10f)));
 
             // 5. 태그 프리셋
             PresetsEnabled = config.Bind(SecPresets, "Enable presets", true,

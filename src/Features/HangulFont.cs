@@ -108,6 +108,12 @@ namespace Nalasmalssami.Features
                 GridRefresh.Request();
             };
 
+            Settings.TagLook.SettingChanged += (_, __) =>
+            {
+                RestoreFontSwaps();
+                GridRefresh.Request();
+            };
+
             return null;
         }
 
@@ -172,19 +178,19 @@ namespace Nalasmalssami.Features
             object current = original ?? _font.GetValue(tagText, null);
             char sample = tag.First(c => c > 0x7F);
 
-            // 1.1.3: 같은 칸의 아이템 이름(Caption)이 한글을 그리고 있으면 그 글꼴+재질을 그대로 빌린다.
-            // 1.1.2는 "태그 글꼴에 한글이 직접 있음"이면 아무것도 안 했는데, 그래도 안 보였을 수 있어서
-            // 글꼴 검사 결과와 상관없이 "실제로 한글이 보이는 칸"을 따라 한다.
+            // 1.1.5: 1.1.3~1.1.4는 "이름 칸 글자에 한글이 있을 때만" 이름 칸 글꼴+재질(테두리 굵은 모양)을 빌렸다.
+            // 그런데 '태그 있으면 이름 숨기기'가 이름 글자를 비우는 시점에 따라 어떤 때는 이름 칸 모양,
+            // 어떤 때는 한글 글꼴 기본 모양(테두리 없음)이 걸려서, 아이템을 옮기거나 메뉴를 다녀오면 굵기가 바뀌어 보였다.
+            // → 글자 내용과 상관없이 설정(태그 한글 모양)으로만 정한다.
             object caption = _gridCaption?.GetValue(view);
-            string captionText = Reflect.IsNull(caption) ? string.Empty : _textProp.GetValue(caption, null) as string ?? string.Empty;
             object direct = null;
             object material = null;
             string how;
-            if (captionText.Any(c => c > 0x7F) && !Reflect.IsNull(_font.GetValue(caption, null)))
+            if (Settings.TagLook.Value == Settings.LookOutline && !Reflect.IsNull(caption) && !Reflect.IsNull(_font.GetValue(caption, null)))
             {
                 direct = _font.GetValue(caption, null);
                 material = _sharedMat?.GetValue(caption, null);
-                how = "이름 칸 따라 하기";
+                how = "이름 글자처럼(테두리)";
             }
             else
             {
@@ -194,7 +200,7 @@ namespace Nalasmalssami.Features
                 }
 
                 direct = ResolveDirectFont(view);
-                how = "한글 글꼴 찾기";
+                how = "깔끔하게(한글 글꼴)";
             }
 
             LogDiagOnce(view, current, direct, sample, how);
@@ -302,6 +308,19 @@ namespace Nalasmalssami.Features
 
         private static void RestoreAllSwaps()
         {
+            RestoreFontSwaps();
+            foreach (var pair in OverflowText)
+            {
+                FixOverflow(pair.Key, pair.Value, false, keepEntry: true);
+            }
+
+            SwappedOverflow.Clear();
+            OverflowText.Clear();
+        }
+
+        /// <summary>바꿔 끼운 글꼴·재질만 원래대로(넘침 방식은 그대로). 태그 한글 모양을 바꿀 때 쓴다.</summary>
+        private static void RestoreFontSwaps()
+        {
             foreach (var pair in SwappedText)
             {
                 if (!Reflect.IsNull(pair.Value) && SwappedFrom.TryGetValue(pair.Key, out object original))
@@ -311,15 +330,8 @@ namespace Nalasmalssami.Features
                 }
             }
 
-            foreach (var pair in OverflowText)
-            {
-                FixOverflow(pair.Key, pair.Value, false, keepEntry: true);
-            }
-
             SwappedFrom.Clear();
             SwappedMat.Clear();
-            SwappedOverflow.Clear();
-            OverflowText.Clear();
             SwappedText.Clear();
         }
 

@@ -23,7 +23,7 @@ namespace Nalasmalssami
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "com.rf.nalasmalssami";
-        public const string Version = "1.1.4";
+        public const string Version = "1.1.5";
 
         internal static ManualLogSource Log;
         internal static Harmony Harmony;
