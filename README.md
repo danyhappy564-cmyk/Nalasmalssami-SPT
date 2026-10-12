@@ -4,10 +4,14 @@
 
 ### ⚠️ IMPORTANT NOTICE / DISCLAIMER
 
-**Original Author:** FalconPilot (SPT Tag over name) / acidphantasm (More Tag Colours)
-**Original Repository:** spt-tag-over-name / acidphantasm-moretagcolours
-**Original Link:** https://github.com/FalconPilot/spt-tag-over-name / https://github.com/acidphantasm/acidphantasm-moretagcolours
-**License notation:** 나랏말싸미 MIT (Copyright (c) 2026 R_F). 가져온 코드의 원본도 둘 다 MIT — FalconPilot (c) 2026, acidphantasm (c) 2025. 원문은 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)
+**Original Works:**
+
+1. **FalconPilot** — SPT Tag over name
+   - Repository: [FalconPilot/spt-tag-over-name](https://github.com/FalconPilot/spt-tag-over-name)
+2. **acidphantasm** — More Tag Colours
+   - Repository: [acidphantasm/acidphantasm-moretagcolours](https://github.com/acidphantasm/acidphantasm-moretagcolours)
+
+- **License:** 나랏말싸미 MIT (Copyright (c) 2026 R_F). 가져온 코드의 원본도 둘 다 MIT — FalconPilot (c) 2026, acidphantasm (c) 2025. 원문은 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)
 
 1. **Reflection & Take-Downs:** I deeply reflect on the ECOT incident. As an AI-assisted "vibe coder," I will immediately delete files if the original authors ask.
 2. **No Re-Distribution:** These ported builds are unverified, temporary fixes. Please do NOT re-upload or share them anywhere else.
@@ -19,6 +23,7 @@
 
 ## 변경 이력
 
+- 2026-10-13 04:43 — README 맨 위 원작자 표기를 한 줄씩 나눠 보기 쉽게 정리 (내용 변화 없음)
 - 2026-10-12 02:38 — 1.1.5 릴리즈 노트 준비: [GitHub용](changelog/RELEASE_NOTES_v1.1.5.md) · [아카라이브용](changelog/RELEASE_NOTES_v1.1.5_arca.txt). 1.1.5 변경분은 아직 인게임 미확인.
 - 2026-10-12 02:27 — 1.1.5. ① **태그 글자가 굵었다 얇았다 바뀌던 문제** 수정: 아이템을 옮기면 얇아지고 메인 메뉴를 다녀오면 다시 두꺼워졌는데, 이건 굵게 설정이 아니라 한글 태그를 그리는 글꼴이 그때그때 달라져서였습니다(아이템 이름이 숨겨지기 전이면 이름 글자의 테두리 있는 모양, 숨겨진 뒤면 테두리 없는 한글 글꼴). 이제 F12 `태그 한글 모양` 설정 하나로만 정해집니다(기본: 깔끔하게, 테두리 없음). ② **굵게를 꺼도 굵게 보이던 문제**: 위 원인 + "끔 = 게임 원래 값"이었던 탓이라, `게임 기본 / 굵게 / 안 굵게` 세 가지로 바꿨습니다. ③ **태그 글자 위치 조절** 추가(좌우·위아래 픽셀, 막대는 그대로).
 - 2026-10-10 22:07 — 1.1.4 릴리즈. 인벤토리 칸 한글 태그가 잘 보이는 것을 확인했습니다(제작자 인게임 테스트). 릴리즈 노트: [GitHub용](changelog/RELEASE_NOTES_v1.1.4.md) · [아카라이브용](changelog/RELEASE_NOTES_v1.1.4_arca.txt)
